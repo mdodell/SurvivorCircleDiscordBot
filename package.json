@@ -1,7 +1,7 @@
 {
-  "name": "discord.ts-example",
+  "name": "survivor-circle-discord-bot",
   "version": "1.0.0",
-  "description": "discordx bot example",
+  "description": "A Discord Bot for the Survivor Circle Discord using Discordx.",
   "keywords": [
     "discordx",
     "discord.ts",
@@ -10,19 +10,13 @@
     "discord",
     "typescript"
   ],
-  "homepage": "https://github.com/oceanroleplay/discord.ts-example#readme",
-  "bugs": {
-    "url": "https://github.com/oceanroleplay/discord.ts-example/issues"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/oceanroleplay/discord.ts-example.git"
   },
   "license": "MIT",
-  "author": "Indian Ocean Roleplay",
-  "contributors": [
-    "Harry <indianoceanroleplay@gmail.com> (https://github.com/oceanroleplay)"
-  ],
+  "author": "mdodell",
+  "contributors": [],
   "type": "module",
   "main": "build/client.js",
   "scripts": {
@@ -36,6 +30,7 @@
     "@discordx/utilities": "^3.1.5",
     "discord.js": "^13.3.1",
     "discordx": "^9.0.1",
+    "dotenv": "^10.0.0",
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
