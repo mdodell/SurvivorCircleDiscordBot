@@ -1,4 +1,4 @@
-import { Role, TextChannel } from "discord.js";
+import { Collection, GuildMember, Role, TextChannel } from "discord.js";
 import {
   Discord,
   SimpleCommand,
@@ -36,43 +36,95 @@ export class Chat {
   @SimpleCommand("chat", { argSplitter: "," })
   async openChat(
     @SimpleCommandOption("user1", { type: "STRING" }) user1: string | undefined,
+    @SimpleCommandOption("user2", { type: "STRING" }) user2: string | undefined,
+    @SimpleCommandOption("user3", { type: "STRING" }) user3: string | undefined,
+    @SimpleCommandOption("user4", { type: "STRING" }) user4: string | undefined,
     command: SimpleCommandMessage
   ) {
+    if (!user1) {
+      command.message.reply("You must include at least one user to chat with!");
+      return;
+    }
     const guild = command.message.guild;
 
-    const roles = await guild?.roles.fetch();
+    // Need to fetch all members of the server
+    await guild?.members.fetch();
 
+    const users = [user1, user2, user3, user4].filter(Boolean);
+
+    // Get everyone with the 'Player' role
+    const roles = await guild?.roles.fetch();
     const players = roles?.find((r) => r.name === "Player")?.members;
 
+    // Get everyone with the 'Spectator' role
     const spectatorRole = roles?.find((r) => r.name === "Spectator");
 
-    const invitedPlayers = players?.filter(
-      (player) => player.user.username === user1
+    const invitedPlayers = players?.filter((player) =>
+      users.includes(player.user.username)
+    ) as Collection<string, GuildMember>;
+
+    const invitedPlayerNames = invitedPlayers?.map(
+      (player) => player.user.username
     );
 
-    const messageSender = command.message.member?.user;
+    // If there wasn't a found player with a name
+    const usersNotFound = users
+      .map((user) => {
+        const notInvited = !invitedPlayerNames?.includes(user as string);
+        return notInvited && user;
+      })
+      .filter(Boolean);
 
-    if (messageSender) {
-      const channel = guild?.channels
-        .create(`${messageSender.username}-${user1}`, {
-          parent: ONE_ONE_CHAT_CATEGORY,
-          type: "GUILD_TEXT",
-        })
-        .then((r) => {
-          r.permissionOverwrites.create(EVERYONE, {
-            VIEW_CHANNEL: false,
-          });
+    if (usersNotFound.length > 0) {
+      command.message.reply(
+        `We were unable to invite ${usersNotFound.join(", ")}`
+      );
+    }
 
-          r.permissionOverwrites.create(spectatorRole as Role, {
-            VIEW_CHANNEL: true,
-          });
+    if (invitedPlayers?.size === 0) {
+      command.message.reply(
+        "Sorry, we couldn't find any of the players you invited!"
+      );
+      return;
+    } else {
+      const messageSender = command.message.member?.user;
 
-          invitedPlayers?.forEach((player) => {
-            r.permissionOverwrites.create(player, {
+      if (messageSender) {
+        const channel = guild?.channels
+          .create(
+            `${messageSender.username}-${invitedPlayers
+              ?.map((m) => m.user.username)
+              .join("-")}`,
+            {
+              parent:
+                invitedPlayers?.size === 1
+                  ? ONE_ONE_CHAT_CATEGORY
+                  : GROUP_CATEGORY,
+              type: "GUILD_TEXT",
+            }
+          )
+          .then((r) => {
+            r.permissionOverwrites.create(EVERYONE, {
+              VIEW_CHANNEL: false,
+            });
+
+            r.permissionOverwrites.create(spectatorRole as Role, {
               VIEW_CHANNEL: true,
             });
+
+            invitedPlayers?.forEach((player) => {
+              r.permissionOverwrites.create(player, {
+                VIEW_CHANNEL: true,
+              });
+            });
           });
-        });
+
+        command.message.reply(
+          `Created a chat with ${invitedPlayerNames
+            ?.filter((playerName) => !usersNotFound.includes(playerName))
+            .join(", ")!}`
+        );
+      }
     }
   }
 }
