@@ -103,20 +103,25 @@ export class Chat {
               type: "GUILD_TEXT",
             }
           )
-          .then((r) => {
-            r.permissionOverwrites.create(EVERYONE, {
+          .then((channel) => {
+            channel.permissionOverwrites.create(EVERYONE, {
               VIEW_CHANNEL: false,
             });
 
-            r.permissionOverwrites.create(spectatorRole as Role, {
+            channel.permissionOverwrites.create(spectatorRole as Role, {
               VIEW_CHANNEL: true,
             });
 
             invitedPlayers?.forEach((player) => {
-              r.permissionOverwrites.create(player, {
+              channel.permissionOverwrites.create(player, {
                 VIEW_CHANNEL: true,
               });
             });
+            channel.send(
+              `${command.message.author.toString()} opened a chat with ${invitedPlayers
+                .map((player) => player.user.toString())
+                .join(", ")}.`
+            );
           });
 
         command.message.reply(
