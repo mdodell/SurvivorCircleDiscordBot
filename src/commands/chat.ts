@@ -5,6 +5,7 @@ import {
   SimpleCommandMessage,
   SimpleCommandOption,
 } from "discordx";
+import { cannotOpenChat } from "../utils/time.js";
 
 const ONE_ONE_CHAT_CATEGORY = "919023378088738916";
 const GROUP_CATEGORY = "919023425182396446";
@@ -41,6 +42,12 @@ export class Chat {
     @SimpleCommandOption("user4", { type: "STRING" }) user4: string | undefined,
     command: SimpleCommandMessage
   ) {
+    if (cannotOpenChat()) {
+      command.message.reply(
+        "You cannot open a chat between the hours of 8 AM EST to 11 PM EST."
+      );
+      return;
+    }
     if (!user1) {
       command.message.reply("You must include at least one user to chat with!");
       return;

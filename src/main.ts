@@ -3,8 +3,6 @@ import { Intents, Interaction, Message } from "discord.js";
 import { Client } from "discordx";
 import { dirname, importx } from "@discordx/importer";
 import * as dotenv from "dotenv";
-//@ts-expect-error no types
-import cron from "node-cron";
 
 dotenv.config();
 
