@@ -13,6 +13,7 @@ const EVERYONE = "918702698495365201";
 
 @Discord()
 export class Chat {
+  // This command will rename the chat.
   @SimpleCommand("rename")
   async renameChat(
     @SimpleCommandOption("new-name", { type: "STRING" })
@@ -34,6 +35,34 @@ export class Chat {
     }
   }
 
+  // This command will close all chats if the user is an admin.
+  @SimpleCommand("close")
+  async closeChat(command: SimpleCommandMessage) {
+    const isHost = command.message.member?.roles.cache.find(
+      (role) => role.name === "Host"
+    );
+    if (isHost) {
+      const playerChats = (
+        await command.message.guild?.channels.fetch()
+      )?.filter(
+        (channel) =>
+          channel.parentId === ONE_ONE_CHAT_CATEGORY ||
+          channel.parentId === GROUP_CATEGORY
+      );
+
+      playerChats?.forEach((chat) => {
+        chat.permissionOverwrites
+          .edit(EVERYONE, {
+            SEND_MESSAGES: false,
+          })
+          .then(() => (chat as TextChannel).send("This chat is now closed!"));
+      });
+    } else {
+      command.message.reply("You must be a host to run this command.");
+    }
+  }
+
+  // This command will open up both private and group chats.
   @SimpleCommand("chat", { argSplitter: "," })
   async openChat(
     @SimpleCommandOption("user1", { type: "STRING" }) user1: string | undefined,
