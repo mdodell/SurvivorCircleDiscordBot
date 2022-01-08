@@ -32,9 +32,11 @@
     "discord.js": "^13.5.0",
     "discordx": "^9.0.1",
     "dotenv": "^10.0.0",
+    "mongoose": "^6.1.5",
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
+    "@types/mongoose": "^5.11.97",
     "nodemon": "^2.0.15",
     "prettier": "^2.5.1",
     "ts-node": "^10.4.0",

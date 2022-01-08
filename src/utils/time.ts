@@ -8,4 +8,4 @@ dayjs.extend(timezone);
 
 dayjs.tz.setDefault("America/New_York");
 
-export const cannotOpenChat = () => dayjs().hour() < 8 || dayjs().hour() > 22;
+export const withinChatHours = () => dayjs().hour() < 8 || dayjs().hour() > 22;

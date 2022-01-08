@@ -3,6 +3,7 @@ import { Intents, Interaction, Message } from "discord.js";
 import { Client } from "discordx";
 import { dirname, importx } from "@discordx/importer";
 import * as dotenv from "dotenv";
+import mongoose, { ConnectOptions } from "mongoose";
 
 dotenv.config();
 
@@ -57,6 +58,15 @@ async function run() {
   // await importx(__dirname + "/{events,commands}/**/*.{ts,js}");
   // with ems
   await importx(dirname(import.meta.url) + "/{events,commands}/**/*.{ts,js}");
+
+  mongoose
+    .connect(process.env.DATABASE_URL!, {
+      keepAlive: true,
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    } as ConnectOptions)
+    .then(() => console.log("Connected to database!"))
+    .catch((e) => console.log(e));
   client.login(process.env.BOT_TOKEN ?? ""); // provide your bot token
 }
 

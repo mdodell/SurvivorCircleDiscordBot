@@ -1,18 +1,22 @@
-import { Collection, GuildMember, Role, TextChannel } from "discord.js";
+import { TextChannel } from "discord.js";
 import {
   Discord,
   SimpleCommand,
   SimpleCommandMessage,
   SimpleCommandOption,
 } from "discordx";
-import { cannotOpenChat } from "../utils/time.js";
-
-const ONE_ONE_CHAT_CATEGORY = "919023378088738916";
-const GROUP_CATEGORY = "919023425182396446";
-const EVERYONE = "918702698495365201";
+import {
+  GROUP_CATEGORY,
+  ONE_ONE_CHAT_CATEGORY,
+} from "../constants/categories.js";
+import ChatModel from "../models/chat.js";
+import { openChat, updateChatReadOnlyMode } from "../utils/chatUtils.js";
+import { withinChatHours } from "../utils/time.js";
+import { isHost, isPlayer } from "../utils/userUtils.js";
 
 @Discord()
 export class Chat {
+  // This command will rename the chat.
   @SimpleCommand("rename")
   async renameChat(
     @SimpleCommandOption("new-name", { type: "STRING" })
@@ -30,10 +34,30 @@ export class Chat {
       command.message.reply("You cannot rename this channel!");
     } else {
       const channelId = command.message.channelId;
+      await ChatModel.findOneAndUpdate(
+        {
+          channelId: channelId,
+        },
+        {
+          name: newName,
+        }
+      );
       command.message.guild?.channels.cache.get(channelId)?.setName(newName);
     }
   }
 
+  // This command will make all chats read-only if the user is an admin.
+  @SimpleCommand("close")
+  async closeChat(command: SimpleCommandMessage) {
+    updateChatReadOnlyMode(command, false);
+  }
+
+  @SimpleCommand("open")
+  async openChats(command: SimpleCommandMessage) {
+    updateChatReadOnlyMode(command, true);
+  }
+
+  // This command will open up both private and group chats.
   @SimpleCommand("chat", { argSplitter: "," })
   async openChat(
     @SimpleCommandOption("user1", { type: "STRING" }) user1: string | undefined,
@@ -42,101 +66,17 @@ export class Chat {
     @SimpleCommandOption("user4", { type: "STRING" }) user4: string | undefined,
     command: SimpleCommandMessage
   ) {
-    if (cannotOpenChat()) {
-      command.message.reply(
-        "You cannot open a chat between the hours of 8 AM EST to 11 PM EST."
-      );
-      return;
-    }
+    // if (!withinChatHours() || !isPlayer(command) || !isHost(command)) {
+    //   command.message.reply(
+    //     "You cannot open a chat between the hours of 8 AM EST to 11 PM EST."
+    //   );
+    //   return;
+    // }
     if (!user1) {
       command.message.reply("You must include at least one user to chat with!");
       return;
     }
-    const guild = command.message.guild;
 
-    // Need to fetch all members of the server
-    await guild?.members.fetch();
-
-    const users = [user1, user2, user3, user4].filter(Boolean);
-
-    // Get everyone with the 'Player' role
-    const roles = await guild?.roles.fetch();
-    const players = roles?.find((r) => r.name === "Player")?.members;
-
-    // Get everyone with the 'Spectator' role
-    const spectatorRole = roles?.find((r) => r.name === "Spectator");
-
-    const invitedPlayers = players?.filter((player) =>
-      users.includes(player.user.username)
-    ) as Collection<string, GuildMember>;
-
-    const invitedPlayerNames = invitedPlayers?.map(
-      (player) => player.user.username
-    );
-
-    // If there wasn't a found player with a name
-    const usersNotFound = users
-      .map((user) => {
-        const notInvited = !invitedPlayerNames?.includes(user as string);
-        return notInvited && user;
-      })
-      .filter(Boolean);
-
-    if (usersNotFound.length > 0) {
-      command.message.reply(
-        `We were unable to invite ${usersNotFound.join(", ")}`
-      );
-    }
-
-    if (invitedPlayers?.size === 0) {
-      command.message.reply(
-        "Sorry, we couldn't find any of the players you invited!"
-      );
-      return;
-    } else {
-      const messageSender = command.message.member?.user;
-
-      if (messageSender) {
-        const channel = guild?.channels
-          .create(
-            `${messageSender.username}-${invitedPlayers
-              ?.map((m) => m.user.username)
-              .join("-")}`,
-            {
-              parent:
-                invitedPlayers?.size === 1
-                  ? ONE_ONE_CHAT_CATEGORY
-                  : GROUP_CATEGORY,
-              type: "GUILD_TEXT",
-            }
-          )
-          .then((channel) => {
-            channel.permissionOverwrites.create(EVERYONE, {
-              VIEW_CHANNEL: false,
-            });
-
-            channel.permissionOverwrites.create(spectatorRole as Role, {
-              VIEW_CHANNEL: true,
-            });
-
-            invitedPlayers?.forEach((player) => {
-              channel.permissionOverwrites.create(player, {
-                VIEW_CHANNEL: true,
-              });
-            });
-            channel.send(
-              `${command.message.author.toString()} opened a chat with ${invitedPlayers
-                .map((player) => player.user.toString())
-                .join(", ")}.`
-            );
-          });
-
-        command.message.reply(
-          `Created a chat with ${invitedPlayerNames
-            ?.filter((playerName) => !usersNotFound.includes(playerName))
-            .join(", ")!}`
-        );
-      }
-    }
+    openChat(command, [user1, user2, user3, user4]);
   }
 }
