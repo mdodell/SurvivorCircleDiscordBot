@@ -29,7 +29,7 @@
     "@discordx/importer": "^1.1.2",
     "@discordx/utilities": "^3.1.5",
     "dayjs": "^1.10.7",
-    "discord.js": "^13.3.1",
+    "discord.js": "^13.5.0",
     "discordx": "^9.0.1",
     "dotenv": "^10.0.0",
     "reflect-metadata": "^0.1.13"
