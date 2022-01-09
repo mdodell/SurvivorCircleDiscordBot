@@ -19,9 +19,9 @@ export class Setup {
               `${player.user.username} was successfully imported into the database!`
             )
           )
-          .catch(() =>
+          .catch((e) =>
             command.message.reply(
-              `There was an error importing ${player.user.username} into the database!`
+              `There was an error importing ${player.user.username} into the database: ${e}!`
             )
           )
     );
