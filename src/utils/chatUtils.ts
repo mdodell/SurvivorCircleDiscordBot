@@ -151,7 +151,9 @@ export const updateChatReadOnlyMode = async (
     playerChats.forEach(async (chat) => {
       if ((open && chat.isOpen) || (!open && !chat.isOpen)) {
         command.message.reply(
-          `The <#${chat.channelId}> chat is already ${open ? "open" : "closed"}`
+          `The <#${chat.channelId}> chat is already ${
+            chat.isOpen ? "open" : "closed"
+          }`
         );
       } else {
         const discordChat = command.message.guild?.channels.cache.get(
