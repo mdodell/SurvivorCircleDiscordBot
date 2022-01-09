@@ -34,14 +34,7 @@ export class Chat {
       command.message.reply("You cannot rename this channel!");
     } else {
       const channelId = command.message.channelId;
-      await ChatModel.findOneAndUpdate(
-        {
-          channelId: channelId,
-        },
-        {
-          name: newName,
-        }
-      );
+
       command.message.guild?.channels.cache.get(channelId)?.setName(newName);
     }
   }

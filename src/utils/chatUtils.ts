@@ -134,7 +134,6 @@ export const openChat = async (
             );
 
             ChatModel.create({
-              name: channelName,
               channelId: channel.id,
               players: playersInChat,
               isOpen: true,
