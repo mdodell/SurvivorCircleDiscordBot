@@ -55,7 +55,7 @@ client.once("ready", async () => {
   console.log("Bot started");
 
   cron.schedule(
-    "00 23 * * 1-5",
+    "0 23 * * 1-5",
     async () => {
       const playerChats: Chat[] = await ChatModel.find({
         isOpen: true,
@@ -82,7 +82,6 @@ client.once("ready", async () => {
             players.forEach(async (player) => {
               const user = client.users.cache.get(player);
 
-              console.log({ user });
               channel.permissionOverwrites.edit(user as User, {
                 VIEW_CHANNEL: false,
                 SEND_MESSAGES: false,
