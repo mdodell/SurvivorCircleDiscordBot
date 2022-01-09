@@ -1,10 +1,20 @@
 import "reflect-metadata";
-import { Intents, Interaction, Message } from "discord.js";
+import {
+  Intents,
+  Interaction,
+  Message,
+  Role,
+  TextChannel,
+  User,
+} from "discord.js";
 import { Client } from "discordx";
 import { dirname, importx } from "@discordx/importer";
 import * as dotenv from "dotenv";
+import cron from "node-cron";
 import mongoose, { ConnectOptions } from "mongoose";
-
+import ChatModel, { Chat } from "./models/chat.js";
+import { SERVER_ID } from "./constants/categories.js";
+import PlayerModel from "./models/player.js";
 dotenv.config();
 
 const client = new Client({
@@ -43,6 +53,49 @@ client.once("ready", async () => {
   //  );
 
   console.log("Bot started");
+
+  cron.schedule(
+    "00 23 * * 1-5",
+    async () => {
+      const playerChats: Chat[] = await ChatModel.find({
+        isOpen: true,
+      });
+
+      // Update chats and close them all for the users that are in the chats
+      await ChatModel.updateMany(
+        {
+          isOpen: true,
+        },
+        {
+          isOpen: false,
+        },
+        async () => {
+          playerChats.forEach(async ({ channelId, players }) => {
+            const channel: TextChannel = client.channels.cache.get(
+              channelId
+            ) as TextChannel;
+
+            (client.channels.cache.get(channelId) as TextChannel).send(
+              `<#${channelId}> is now closed!`
+            );
+
+            players.forEach(async (player) => {
+              const user = client.users.cache.get(player);
+
+              console.log({ user });
+              channel.permissionOverwrites.edit(user as User, {
+                VIEW_CHANNEL: false,
+                SEND_MESSAGES: false,
+              });
+            });
+          });
+        }
+      );
+    },
+    {
+      timezone: "America/New_York",
+    }
+  );
 });
 
 client.on("interactionCreate", (interaction: Interaction) => {

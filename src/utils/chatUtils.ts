@@ -13,6 +13,9 @@ export const openChat = async (
   command: SimpleCommandMessage,
   users: (string | undefined)[]
 ) => {
+  const filteredUsers = [
+    ...new Set(users.filter(Boolean).map((name) => name?.toLowerCase())),
+  ];
   const guild = command.message.guild;
 
   // Need to fetch all members of the server
@@ -27,26 +30,43 @@ export const openChat = async (
 
   const playerRole = roles?.find((r) => r.name === "Player");
 
-  const invitedPlayers = players?.filter((player) =>
-    users.includes(player.user.username)
+  const invitedPlayers = players?.filter(
+    (player) =>
+      filteredUsers.includes((player.nickname as string)?.toLowerCase()) ||
+      filteredUsers.includes(player.user.username.toLowerCase())
   ) as Collection<string, GuildMember>;
 
-  const invitedPlayerNames = invitedPlayers?.map(
-    (player) => player.user.username
-  );
+  const invitedPlayerNames = invitedPlayers?.map((player) => ({
+    nickname: player.nickname?.toLowerCase(),
+    username: player.user.username.toLowerCase(),
+    id: player.user.id,
+  }));
 
   // If there wasn't a found player with a name
-  const usersNotFound = users
+  const usersNotFound = filteredUsers
     .map((user) => {
-      const notInvited = !invitedPlayerNames?.includes(user as string);
+      const invitedUsernames = invitedPlayerNames.map((player) =>
+        player.username.toLowerCase()
+      );
+
+      const invitedNicknames = invitedPlayerNames.map((player) =>
+        player.nickname?.toLowerCase()
+      );
+
+      const notInvited =
+        !invitedUsernames?.includes(user as string) &&
+        !invitedNicknames.includes(user as string);
       return notInvited && user;
     })
     .filter(Boolean);
 
   if (usersNotFound.length > 0) {
     command.message.reply(
-      `We were unable to invite ${usersNotFound.join(", ")}`
+      `We were unable to invite ${usersNotFound.join(
+        ", "
+      )} so the chat will not be made. Try again please!`
     );
+    return;
   }
 
   if (invitedPlayers?.size === 0) {
@@ -55,7 +75,7 @@ export const openChat = async (
     );
     return;
   } else {
-    const messageSender = command.message.member?.user;
+    const messageSender = command.message.member;
 
     if (messageSender) {
       const playersInChat = [
@@ -64,15 +84,18 @@ export const openChat = async (
       ];
 
       const potentialChat = await ChatModel.findOne({
-        players: {
-          $all: playersInChat,
-        },
+        $and: [
+          { players: { $all: playersInChat } },
+          { players: { $size: playersInChat.length } },
+        ],
       });
 
       // If the chat doesn't already exist
       if (!potentialChat) {
-        const channelName = `${messageSender.username}-${invitedPlayers
-          ?.map((m) => m.user.username)
+        const channelName = `${
+          messageSender.nickname || messageSender.user.username
+        }-${invitedPlayers
+          ?.map((m) => m.nickname || m.user.username)
           .join("-")}`;
 
         await guild?.channels
@@ -119,20 +142,47 @@ export const openChat = async (
 
             command.message.reply(
               `Created the <#${channel.id}> chat with ${invitedPlayerNames
-                ?.filter((playerName) => !usersNotFound.includes(playerName))
+                .map((playerName) => `<@${playerName.id}>`)
                 .join(", ")!}`
             );
           });
       } else if (potentialChat.isOpen) {
         // If the chat is already open
         command.message.reply(
-          `You already have a chat with ${invitedPlayerNames}: <#${potentialChat.channelId}>!`
+          `You already have a chat with ${invitedPlayers.map(
+            (player) => `<@${player.id}>`
+          )}: <#${potentialChat.channelId}>!`
         );
       } else if (!potentialChat.isOpen) {
         // Reopen the chat with permissions
-        // guild?.channels.fetch(potentialChat.channelId).then(channel => {
-        //   channel?.permissionOverwrites.edit({})
-        // };
+        const channel = guild?.channels.cache.get(
+          potentialChat.channelId
+        ) as TextChannel;
+
+        invitedPlayers?.forEach((player) => {
+          channel?.permissionOverwrites.edit(player, {
+            VIEW_CHANNEL: true,
+            SEND_MESSAGES: true,
+          });
+        });
+
+        channel.send(
+          `${command.message.author.toString()} reopened the <#${
+            channel.id
+          }> with ${invitedPlayers
+            .map((player) => player.user.toString())
+            .join(", ")}.`
+        );
+
+        await potentialChat.updateOne({
+          isOpen: true,
+        });
+
+        command.message.reply(
+          `Reopened the <#${channel.id}> chat with ${invitedPlayerNames
+            ?.map((player) => `<@${player.id}>`)
+            .join(", ")!}`
+        );
       }
     }
   }

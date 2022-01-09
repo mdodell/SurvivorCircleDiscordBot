@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-interface Chat {
+export interface Chat {
   isOpen: boolean;
   name: string;
   players: string[];
