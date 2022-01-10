@@ -98,7 +98,7 @@ client.once("ready", async () => {
   );
 
   cron.schedule(
-    "* 17 * * 1-5",
+    "* 19 * * 1-5",
     async () => {
       const guild = client.guilds.cache.get(SERVER_ID);
       const roles = await guild?.roles.fetch();
