@@ -230,6 +230,7 @@ export const updateChatReadOnlyMode = async (
 
         chat.players.forEach(async (player) => {
           const user = await command.message.guild?.members.fetch(player);
+
           discordChat.permissionOverwrites.edit(user as GuildMember, {
             SEND_MESSAGES: open,
           });

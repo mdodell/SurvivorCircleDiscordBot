@@ -13,8 +13,7 @@ import * as dotenv from "dotenv";
 import cron from "node-cron";
 import mongoose, { ConnectOptions } from "mongoose";
 import ChatModel, { Chat } from "./models/chat.js";
-import { SERVER_ID } from "./constants/categories.js";
-import PlayerModel from "./models/player.js";
+import { SERVER_ID, ALERTS_CHANNEl } from "./constants/categories.js";
 dotenv.config();
 
 const client = new Client({
@@ -97,6 +96,17 @@ client.once("ready", async () => {
       timezone: "America/New_York",
     }
   );
+
+  cron.schedule("* 8 * * 1-5", async () => {
+    const guild = client.guilds.cache.get(SERVER_ID);
+    const roles = await guild?.roles.fetch();
+
+    const playerRole = roles?.find((r) => r.name === "Player");
+
+    const channel = guild?.channels.cache.get(ALERTS_CHANNEl) as TextChannel;
+
+    channel.send(`${playerRole}, chats can now be opened!`);
+  });
 });
 
 client.on("interactionCreate", (interaction: Interaction) => {
