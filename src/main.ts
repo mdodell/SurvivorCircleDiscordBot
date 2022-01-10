@@ -97,16 +97,22 @@ client.once("ready", async () => {
     }
   );
 
-  cron.schedule("* 8 * * 1-5", async () => {
-    const guild = client.guilds.cache.get(SERVER_ID);
-    const roles = await guild?.roles.fetch();
+  cron.schedule(
+    "* 8 * * 1-5",
+    async () => {
+      const guild = client.guilds.cache.get(SERVER_ID);
+      const roles = await guild?.roles.fetch();
 
-    const playerRole = roles?.find((r) => r.name === "Player");
+      const playerRole = roles?.find((r) => r.name === "Player");
 
-    const channel = guild?.channels.cache.get(ALERTS_CHANNEl) as TextChannel;
+      const channel = guild?.channels.cache.get(ALERTS_CHANNEl) as TextChannel;
 
-    channel.send(`${playerRole}, chats can now be opened!`);
-  });
+      channel.send(`${playerRole}, chats can now be opened!`);
+    },
+    {
+      timezone: "America/New_York",
+    }
+  );
 });
 
 client.on("interactionCreate", (interaction: Interaction) => {
