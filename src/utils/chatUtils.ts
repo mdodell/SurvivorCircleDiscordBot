@@ -1,4 +1,10 @@
-import { TextChannel, Collection, Role, GuildMember } from "discord.js";
+import {
+  TextChannel,
+  Collection,
+  Role,
+  GuildMember,
+  PermissionString,
+} from "discord.js";
 
 import { SimpleCommandMessage } from "discordx";
 import {
@@ -109,10 +115,12 @@ export const openChat = async (
           .then((channel) => {
             channel.permissionOverwrites.create(EVERYONE, {
               VIEW_CHANNEL: false,
+              SEND_MESSAGES: false,
             });
 
             channel.permissionOverwrites.create(spectatorRole as Role, {
               VIEW_CHANNEL: true,
+              SEND_MESSAGES: false,
             });
 
             // Make it so players cannot see the channel
@@ -124,6 +132,7 @@ export const openChat = async (
             invitedPlayers?.forEach((player) => {
               channel.permissionOverwrites.create(player, {
                 VIEW_CHANNEL: true,
+                SEND_MESSAGES: true,
               });
             });
 
@@ -137,6 +146,7 @@ export const openChat = async (
               channelId: channel.id,
               players: playersInChat,
               isOpen: true,
+              isReadOnly: null,
             });
 
             command.message.reply(
@@ -198,18 +208,18 @@ export const updateChatReadOnlyMode = async (
     const playerChats = await ChatModel.find({});
 
     playerChats.forEach(async (chat) => {
-      if ((open && chat.isOpen) || (!open && !chat.isOpen)) {
+      if ((open && chat.isReadOnly) || (!open && chat.isReadOnly === false)) {
         command.message.reply(
           `The <#${chat.channelId}> chat is already ${
-            chat.isOpen ? "open" : "closed"
+            chat.isReadOnly ? "open" : "closed"
           }`
         );
       } else {
         const discordChat = command.message.guild?.channels.cache.get(
           chat.channelId
-        );
+        ) as TextChannel;
 
-        await ChatModel.findOneAndUpdate(
+        await ChatModel.updateOne(
           {
             channelId: chat.channelId,
           },
@@ -218,15 +228,16 @@ export const updateChatReadOnlyMode = async (
           }
         );
 
-        (discordChat as TextChannel).permissionOverwrites
-          .edit(EVERYONE, {
+        chat.players.forEach(async (player) => {
+          const user = await command.message.guild?.members.fetch(player);
+          discordChat.permissionOverwrites.edit(user as GuildMember, {
             SEND_MESSAGES: open,
-          })
-          .then(() =>
-            (discordChat as TextChannel).send(
-              `<#${chat.channelId}> is now ${open ? "open" : "closed"}!`
-            )
-          );
+          });
+        });
+
+        discordChat.send(
+          `<#${chat.channelId}> is now ${open ? "open" : "closed"}!`
+        );
       }
     });
   } else {

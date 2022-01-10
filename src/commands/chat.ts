@@ -9,7 +9,6 @@ import {
   GROUP_CATEGORY,
   ONE_ONE_CHAT_CATEGORY,
 } from "../constants/categories.js";
-import ChatModel from "../models/chat.js";
 import { openChat, updateChatReadOnlyMode } from "../utils/chatUtils.js";
 import { withinChatHours } from "../utils/time.js";
 import { isHost, isPlayer } from "../utils/userUtils.js";
@@ -59,12 +58,18 @@ export class Chat {
     @SimpleCommandOption("user4", { type: "STRING" }) user4: string | undefined,
     command: SimpleCommandMessage
   ) {
-    // if (!withinChatHours() || !isPlayer(command) || !isHost(command)) {
-    //   command.message.reply(
-    //     "You cannot open a chat between the hours of 8 AM EST to 11 PM EST."
-    //   );
-    //   return;
-    // }
+    // If the person trying to chat is not a player or a host.
+    if (!isHost(command) && !isPlayer(command)) {
+      command.message.reply("You must be a host or a player to open a chat!");
+      return;
+    }
+    // If the chat is not within the correct hours, and the player is not a host or a player
+    if (!withinChatHours() && (!isHost(command) || isPlayer(command))) {
+      command.message.reply(
+        "You can only open a chat between the hours of 8 AM EST to 11 PM EST."
+      );
+      return;
+    }
     if (!user1) {
       command.message.reply("You must include at least one user to chat with!");
       return;

@@ -68,6 +68,8 @@ client.once("ready", async () => {
         },
         {
           isOpen: false,
+          // Reset the read only state as well
+          isReadOnly: null,
         },
         async () => {
           playerChats.forEach(async ({ channelId, players }) => {
