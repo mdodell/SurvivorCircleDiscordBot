@@ -14,6 +14,7 @@ import cron from "node-cron";
 import mongoose, { ConnectOptions } from "mongoose";
 import ChatModel, { Chat } from "./models/chat.js";
 import { SERVER_ID, ALERTS_CHANNEl } from "./constants/categories.js";
+import PlayerModel from "./models/player.js";
 dotenv.config();
 
 const client = new Client({
@@ -104,6 +105,21 @@ client.once("ready", async () => {
       const roles = await guild?.roles.fetch();
 
       const playerRole = roles?.find((r) => r.name === "Player");
+
+      const players = playerRole?.members;
+      if (players) {
+        players.forEach(async (player) => {
+          await PlayerModel.findOneAndUpdate(
+            {
+              id: player.id,
+            },
+            {
+              privateChatNumber: 0,
+              groupChatNumber: 0,
+            }
+          );
+        });
+      }
 
       const channel = guild?.channels.cache.get(ALERTS_CHANNEl) as TextChannel;
 
