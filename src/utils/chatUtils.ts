@@ -4,6 +4,7 @@ import {
   Role,
   GuildMember,
   PermissionString,
+  UserFlags,
 } from "discord.js";
 
 import { SimpleCommandMessage } from "discordx";
@@ -14,6 +15,7 @@ import {
 } from "../constants/categories.js";
 import { isHost } from "./userUtils.js";
 import ChatModel from "../models/chat.js";
+import PlayerModel from "../models/player.js";
 
 export const openChat = async (
   command: SimpleCommandMessage,
@@ -22,6 +24,43 @@ export const openChat = async (
   const filteredUsers = [
     ...new Set(users.filter(Boolean).map((name) => name?.toLowerCase())),
   ];
+
+  const player = await PlayerModel.findOne({
+    discordId: command.message.member?.id,
+  });
+
+  if (
+    (player?.privateChatNumber === 2 && player.groupChatNumber === 1) ||
+    player?.privateChatNumber === 3
+  ) {
+    command.message.reply(
+      `Sorry, you have used all of your chats for the day!`
+    );
+    return;
+  } else if (filteredUsers.length === 1) {
+    await PlayerModel.findOneAndUpdate(
+      {
+        discordId: command.message.member?.id,
+      },
+      {
+        $inc: {
+          privateChatNumber: 1,
+        },
+      }
+    );
+  } else if (filteredUsers.length > 1) {
+    await PlayerModel.findOneAndUpdate(
+      {
+        discordId: command.message.member?.id,
+      },
+      {
+        $inc: {
+          groupChatNumber: 1,
+        },
+      }
+    );
+  }
+
   const guild = command.message.guild;
 
   // Need to fetch all members of the server
